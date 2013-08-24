@@ -16,7 +16,7 @@ import (
 var (
 	ApiUrls = map[string]string{
 		"authorize-url":       "https://www.dropbox.com/1/oauth2/authorize",
-		"authorized-redirect": "https://localhost/oauth2/authorized",
+		"authorized-redirect": "https://coderbee.net/oauth2/authorized",
 
 		"account/info":          "https://api.dropbox.com/1/account/info",
 		"metadata":              "https://api.dropbox.com/1/metadata/<root>/<path>",
@@ -90,45 +90,41 @@ type Content struct {
 	Revision     int
 }
 
-type FileMetadata struct {
-	Content
-}
-
 type PathMetadata struct {
 	Content
 	Hash     string
 	Contents []Content
 }
 
-func (api *DropboxApi) GetUrl(name string) string {
+func (api *DropboxApi) getUrl(name string) string {
 	return ApiUrls[name]
 }
 
-func (api *DropboxApi) GetRootPathUrl(name, root, path string) string {
-	apiUrl := api.GetUrl(name)
+func (api *DropboxApi) getRootPathUrl(name, root, path string) string {
+	apiUrl := api.getUrl(name)
 	apiUrl = strings.Replace(apiUrl, "<root>", url.QueryEscape(root), 1)
 	apiUrl = strings.Replace(apiUrl, "<path>", url.QueryEscape(path), 1)
 	return apiUrl
 }
 
-func (api *DropboxApi) ToApiError(err error) *ApiError {
+func (api *DropboxApi) toApiError(err error) *ApiError {
 	return &ApiError{Code: api.ErrorCode, ErrorMsg: err.Error()}
 }
 
-func (api *DropboxApi) GetErrorMsg(body []byte, code int) *ApiError {
+func (api *DropboxApi) getErrorMsg(body []byte, code int) *ApiError {
 	msg := &ApiError{Code: code}
 	json.Unmarshal(body, &msg)
 	return msg
 }
 
 func (api *DropboxApi) Authorize(appKey string) {
-	url := fmt.Sprintf("%s?response_type=token&client_id=%s&redirect_uri=%s", api.GetUrl("authorize-url"), appKey, api.GetUrl("authorized-redirect"))
+	url := fmt.Sprintf("%s?response_type=token&client_id=%s&redirect_uri=%s", api.getUrl("authorize-url"), appKey, api.getUrl("authorized-redirect"))
 	// https://coderbee.net/oauth2/authorized#access_token=O_YKHHDEy3kAAAAAAAAAAVZZU1K72vMSH9U8LcgK83_jjm2R95bWelhC7qpbEbwX&token_type=bearer&uid=158135984
 
 	fmt.Printf("%s\n", url)
 }
 
-func (api *DropboxApi) DoRequest(req *http.Request) (*http.Response, *ApiError) {
+func (api *DropboxApi) doRequest(req *http.Request) (*http.Response, *ApiError) {
 	err := api.Signer.Sign(req)
 	if err != nil {
 		return &http.Response{}, err
@@ -138,7 +134,7 @@ func (api *DropboxApi) DoRequest(req *http.Request) (*http.Response, *ApiError) 
 
 	resp, httperr := client.Do(req)
 	if httperr != nil {
-		err = api.ToApiError(httperr)
+		err = api.toApiError(httperr)
 	}
 	return resp, err
 }
@@ -147,7 +143,7 @@ func (api *DropboxApi) bytesToJson(bodybytes []byte, jsonObj interface{}) *ApiEr
 	jsonerr := json.Unmarshal(bodybytes, &jsonObj)
 
 	if jsonerr != nil {
-		return api.ToApiError(jsonerr)
+		return api.toApiError(jsonerr)
 	}
 
 	return nil
@@ -157,41 +153,41 @@ func (api *DropboxApi) bodyToJson(resp *http.Response, jsonObj interface{}) *Api
 	bodybytes, ioerr := ioutil.ReadAll(resp.Body)
 
 	if ioerr != nil {
-		return api.ToApiError(ioerr)
+		return api.toApiError(ioerr)
 	}
 
 	if resp.StatusCode == http.StatusOK {
 		return api.bytesToJson(bodybytes, &jsonObj)
 	} else {
-		return api.GetErrorMsg(bodybytes, resp.StatusCode)
+		return api.getErrorMsg(bodybytes, resp.StatusCode)
 	}
 }
 
-func (api *DropboxApi) DoGet(url string) (*http.Response, *ApiError) {
+func (api *DropboxApi) doGet(url string) (*http.Response, *ApiError) {
 	req, httperr := http.NewRequest("GET", url, nil)
 	if httperr != nil {
-		return nil, api.ToApiError(httperr)
+		return nil, api.toApiError(httperr)
 	}
 
-	return api.DoRequest(req)
+	return api.doRequest(req)
 }
 
-func (api *DropboxApi) DoPut(body io.Reader, url string) (*http.Response, *ApiError) {
+func (api *DropboxApi) doPut(body io.Reader, url string) (*http.Response, *ApiError) {
 	req, httperr := http.NewRequest("PUT", url, body)
 	if httperr != nil {
-		return nil, api.ToApiError(httperr)
+		return nil, api.toApiError(httperr)
 	}
 
-	return api.DoRequest(req)
+	return api.doRequest(req)
 }
 
 func (api *DropboxApi) jsonRepsonse(method, url string, jsonObj interface{}) *ApiError {
 	req, httperr := http.NewRequest(method, url, nil)
 	if httperr != nil {
-		return api.ToApiError(httperr)
+		return api.toApiError(httperr)
 	}
 
-	resp, err := api.DoRequest(req)
+	resp, err := api.doRequest(req)
 	if err != nil {
 		return err
 	}
@@ -210,7 +206,7 @@ func (api *DropboxApi) jsonReponseByPost(url string, jsonObj interface{}) *ApiEr
 }
 
 func (api *DropboxApi) GetAccountInfo() (*AccountInfo, *ApiError) {
-	url := api.GetUrl("account/info")
+	url := api.getUrl("account/info")
 	var accountInfo = &AccountInfo{}
 
 	err := api.jsonReponseByGet(url, accountInfo)
@@ -226,7 +222,7 @@ type FileEntry struct {
 func (api *DropboxApi) getFileEntry(apiurl string) (*FileEntry, *ApiError) {
 	file := &FileEntry{}
 
-	resp, err := api.DoGet(apiurl)
+	resp, err := api.doGet(apiurl)
 	if err != nil {
 		return file, err
 	}
@@ -235,7 +231,7 @@ func (api *DropboxApi) getFileEntry(apiurl string) (*FileEntry, *ApiError) {
 
 	bytes, ioerr := ioutil.ReadAll(resp.Body)
 	if ioerr != nil {
-		return file, api.ToApiError(ioerr)
+		return file, api.toApiError(ioerr)
 	}
 	file.DataByte = bytes
 
@@ -250,7 +246,7 @@ func (api *DropboxApi) GetFile(path string) (*FileEntry, *ApiError) {
 }
 
 func (api *DropboxApi) GetFile_(root, path, rev string) (*FileEntry, *ApiError) {
-	apiurl := api.GetRootPathUrl("gets", root, path)
+	apiurl := api.getRootPathUrl("gets", root, path)
 	apiurl = fmt.Sprintf("%s?rev=%s", apiurl, rev)
 
 	return api.getFileEntry(apiurl)
@@ -261,7 +257,7 @@ func (api *DropboxApi) Thumbnails(path string) (*FileEntry, *ApiError) {
 }
 
 func (api *DropboxApi) Thumbnails_(root, path, format, size string) (*FileEntry, *ApiError) {
-	apiurl := api.GetRootPathUrl("thumbnails", root, path)
+	apiurl := api.getRootPathUrl("thumbnails", root, path)
 
 	return api.getFileEntry(apiurl)
 }
@@ -273,7 +269,7 @@ func (api *DropboxApi) GetFileMetadata(path string) (*PathMetadata, *ApiError) {
 func (api *DropboxApi) GetFileMetadata_(root, path string, file_limit int, hash string,
 	list, include_deleted bool, rev string) (*PathMetadata, *ApiError) {
 
-	apiurl := api.GetRootPathUrl("metadata", root, path)
+	apiurl := api.getRootPathUrl("metadata", root, path)
 	values := url.Values{}
 	values.Add("file_limit", strconv.Itoa(file_limit))
 	values.Add("hash", hash)
@@ -295,7 +291,7 @@ func (api *DropboxApi) GetFileMetadata_(root, path string, file_limit int, hash 
 func (api *DropboxApi) PutFileByName(localFilePath, root, path string) (*PathMetadata, *ApiError) {
 	file, ioerr := os.Open(localFilePath)
 	if ioerr != nil {
-		return &PathMetadata{}, api.ToApiError(ioerr)
+		return &PathMetadata{}, api.toApiError(ioerr)
 	}
 
 	defer file.Close()
@@ -308,7 +304,7 @@ func (api *DropboxApi) PutFileByReader(body io.Reader, root, path string) (*Path
 }
 
 func (api *DropboxApi) PutFile(body io.Reader, root, path, parent_rev string, overwrite bool) (*PathMetadata, *ApiError) {
-	apiurl := api.GetRootPathUrl("files_put", root, path)
+	apiurl := api.getRootPathUrl("files_put", root, path)
 
 	values := url.Values{}
 	values.Add("overwrite", strconv.FormatBool(overwrite))
@@ -317,7 +313,7 @@ func (api *DropboxApi) PutFile(body io.Reader, root, path, parent_rev string, ov
 
 	metadata := &PathMetadata{}
 
-	resp, err := api.DoPut(body, apiurl)
+	resp, err := api.doPut(body, apiurl)
 	if err != nil {
 		return metadata, err
 	}
@@ -341,7 +337,7 @@ type DeltaResult struct {
 }
 
 func (api *DropboxApi) Delta(cursor string) (*DeltaResult, *ApiError) {
-	apiurl := api.GetUrl("delta")
+	apiurl := api.getUrl("delta")
 
 	values := url.Values{}
 	values.Add("cursor", cursor)
@@ -359,7 +355,7 @@ func (api *DropboxApi) Revisions(path string) (*[]PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Revisions_(root, path string, rev_limit int) (*[]PathMetadata, *ApiError) {
-	apiurl := api.GetRootPathUrl("revisions", root, path)
+	apiurl := api.getRootPathUrl("revisions", root, path)
 
 	values := url.Values{}
 	values.Add("rev_limit", strconv.Itoa(rev_limit))
@@ -376,7 +372,7 @@ func (api *DropboxApi) Restore(path, rev string) (*PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Restore_(root, path, rev string) (*PathMetadata, *ApiError) {
-	apiurl := api.GetRootPathUrl("restore", root, path)
+	apiurl := api.getRootPathUrl("restore", root, path)
 
 	values := url.Values{}
 	values.Add("rev", rev)
@@ -393,7 +389,7 @@ func (api *DropboxApi) Search(path, query string) (*[]PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Search_(root, path, query string, file_limit int, include_deleted bool) (*[]PathMetadata, *ApiError) {
-	apiurl := api.GetRootPathUrl("search", root, path)
+	apiurl := api.getRootPathUrl("search", root, path)
 
 	values := url.Values{}
 	values.Add("query", query)
@@ -412,7 +408,7 @@ func (api *DropboxApi) Shares(path string) (map[string]string, *ApiError) {
 }
 
 func (api *DropboxApi) Shares_(root, path string, short_url bool) (map[string]string, *ApiError) {
-	apiurl := api.GetRootPathUrl("shares", root, path)
+	apiurl := api.getRootPathUrl("shares", root, path)
 	fmt.Printf("apiurl:%s\n", apiurl)
 
 	values := url.Values{}
@@ -430,7 +426,7 @@ func (api *DropboxApi) CopyRef(path string) (map[string]string, *ApiError) {
 }
 
 func (api *DropboxApi) CopyRef_(root, path string) (map[string]string, *ApiError) {
-	apiurl := api.GetRootPathUrl("copy_ref", root, path)
+	apiurl := api.getRootPathUrl("copy_ref", root, path)
 	fmt.Printf("apiurl:%s\n", apiurl)
 
 	metadata := make(map[string]string)
@@ -443,7 +439,7 @@ func (api *DropboxApi) Media(path string) (map[string]string, *ApiError) {
 }
 
 func (api *DropboxApi) Media_(root, path string) (map[string]string, *ApiError) {
-	apiurl := api.GetRootPathUrl("media", root, path)
+	apiurl := api.getRootPathUrl("media", root, path)
 
 	values := url.Values{}
 	values.Add("locale", api.Locale)
@@ -460,31 +456,65 @@ type ChunkedUploadRes struct {
 	Expires   string
 }
 
-func (api *DropboxApi) UploadByChunked(localPath string, trunkSize, totalRetryCount int) (*ChunkedUploadRes, *ApiError) {
-    file, ioerr := os.Open(localPath)
-    if ioerr != nil {
-        return nil, api.ToApiError(ioerr)
-    }
-    defer file.Close()
+func (api *DropboxApi) UploadByChunked(localPath, path string, trunkSize, retryCount int) (*PathMetadata, *ApiError) {
+	file, ioerr := os.Open(localPath)
+	if ioerr != nil {
+		return nil, api.toApiError(ioerr)
+	}
+	defer file.Close()
 
-    return api.UploadReaderByChunked(file, trunkSize, totalRetryCount)
+	return api.UploadReaderByChunked(file, path, trunkSize, retryCount)
 }
 
-func (api *DropboxApi) UploadReaderByChunked(file io.Reader, trunkSize, totalRetryCount int) (*ChunkedUploadRes, *ApiError) {
-    
-    return nil, nil
+func (api *DropboxApi) UploadReaderByChunked(file io.Reader, path string, trunkSize, retryCount int) (*PathMetadata, *ApiError) {
+	buff := make([]byte, trunkSize)
+	offset, uploadid := 0, ""
+
+	for {
+		n, ioerr := file.Read(buff)
+		if ioerr == io.EOF {
+			break
+		}
+		if ioerr != nil {
+			return nil, api.toApiError(ioerr)
+		}
+
+		res, apiErr := api.retryUploadTrunk(buff[0:n], uploadid, offset, retryCount)
+		if apiErr != nil {
+			return nil, apiErr
+		}
+		offset, uploadid = res.Offset, res.Upload_id
+	}
+
+	return api.CommitChunkedUpload(path, uploadid)
+}
+
+func (api *DropboxApi) retryUploadTrunk(trunk []byte, upload_id string, offset, retryCount int) (*ChunkedUploadRes, *ApiError) {
+	var res *ChunkedUploadRes
+	var err *ApiError
+	for i := 1; i <= retryCount; i++ {
+		res, err = api.ChunkedUpload_(trunk, upload_id, offset)
+		if err == nil {
+			return res, nil
+		} else if i == retryCount {
+			return res, &ApiError{ErrorMsg: fmt.Sprintf("%s and cause too many upload retry times .", err.Error()), Code: api.ErrorCode}
+		}
+	}
+	return res, err
 }
 
 func (api *DropboxApi) ChunkedUpload_(trunk []byte, upload_id string, offset int) (*ChunkedUploadRes, *ApiError) {
-	apiurl := api.GetUrl("chunked_upload")
+	apiurl := api.getUrl("chunked_upload")
 
 	values := url.Values{}
-	values.Add("upload_id", upload_id)
+	if len(upload_id) > 0 {
+		values.Add("upload_id", upload_id)
+	}
 	values.Add("offset", strconv.Itoa(offset))
 	apiurl = fmt.Sprintf("%s?%s", apiurl, values.Encode())
 
 	metadata := &ChunkedUploadRes{}
-	resp, err := api.DoPut(bytes.NewBuffer(trunk), apiurl)
+	resp, err := api.doPut(bytes.NewBuffer(trunk), apiurl)
 	if err == nil {
 		defer resp.Body.Close()
 		err = api.bodyToJson(resp, metadata)
@@ -498,7 +528,7 @@ func (api *DropboxApi) CommitChunkedUpload(path, upload_id string) (*PathMetadat
 }
 
 func (api *DropboxApi) CommitChunkedUpload_(root, path, upload_id, parent_rev string, overwrite bool) (*PathMetadata, *ApiError) {
-	apiurl := api.GetRootPathUrl("commit_chunked_upload", root, path)
+	apiurl := api.getRootPathUrl("commit_chunked_upload", root, path)
 
 	values := url.Values{}
 	values.Add("upload_id", upload_id)
@@ -522,7 +552,7 @@ func (api *DropboxApi) Copy(from_path, to_path string) (*PathMetadata, *ApiError
 }
 
 func (api *DropboxApi) Copy_(root, from_path, to_path, from_copy_ref string) (*PathMetadata, *ApiError) {
-	apiurl := api.GetUrl("fileops/copy")
+	apiurl := api.getUrl("fileops/copy")
 
 	values := url.Values{}
 	values.Add("root", root)
@@ -540,7 +570,7 @@ func (api *DropboxApi) CreateFolder(path string) (*PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) CreateFolder_(root, path string) (*PathMetadata, *ApiError) {
-	apiurl := api.GetUrl("fileops/create_folder")
+	apiurl := api.getUrl("fileops/create_folder")
 
 	values := url.Values{}
 	values.Add("root", root)
@@ -556,7 +586,7 @@ func (api *DropboxApi) Delete(path string) (*PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Delete_(root, path string) (*PathMetadata, *ApiError) {
-	apiurl := api.GetUrl("fileops/delete")
+	apiurl := api.getUrl("fileops/delete")
 
 	values := url.Values{}
 	values.Add("root", root)
@@ -572,7 +602,7 @@ func (api *DropboxApi) Move(from_path, to_path string) (*PathMetadata, *ApiError
 }
 
 func (api *DropboxApi) Move_(root, from_path, to_path string) (*PathMetadata, *ApiError) {
-	apiurl := api.GetUrl("fileops/move")
+	apiurl := api.getUrl("fileops/move")
 
 	values := url.Values{}
 	values.Add("root", root)
