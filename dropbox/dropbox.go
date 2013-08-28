@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -326,11 +327,18 @@ func (api *DropboxApi) PutFile(body io.Reader, root, path, parent_rev string, ov
 
 type DeltaEntry struct {
 	Path     string
-	Metadata PathMetadata
+	Metadata *PathMetadata
 }
 
 type DeltaResult struct {
-	Entries [][]DeltaEntry
+	Entries []*DeltaEntry
+	Reset   bool
+	Cursor  string
+	HasMore bool `json:"Has_more"`
+}
+
+type innerDeltaResult struct {
+	Entries [][]interface{}
 	Reset   bool
 	Cursor  string
 	HasMore bool `json:"Has_more"`
@@ -344,10 +352,64 @@ func (api *DropboxApi) Delta(cursor string) (*DeltaResult, *ApiError) {
 	values.Add("locale", api.Locale)
 	apiurl = fmt.Sprintf("%s?%s", apiurl, values.Encode())
 
-	delta := &DeltaResult{}
-	err := api.jsonReponseByPost(apiurl, delta)
+	innerdelta := &innerDeltaResult{}
+	err := api.jsonReponseByPost(apiurl, innerdelta)
+	if err != nil {
+		return nil, err
+	}
 
-	return delta, err
+	delta := &DeltaResult{Reset: innerdelta.Reset, Cursor: innerdelta.Cursor, HasMore: innerdelta.HasMore}
+	entryCount := len(innerdelta.Entries)
+	delta.Entries = make([]*DeltaEntry, entryCount)
+
+	for i := 0; i < entryCount; i++ {
+		v := innerdelta.Entries[i]
+
+		str, _ := v[0].(string)
+		entry := &DeltaEntry{Path: str}
+
+		if v[1] != nil {
+			entry.Metadata = api.convert2pathMetadata(v[1])
+		}
+
+		delta.Entries[i] = entry
+	}
+
+	return delta, nil
+}
+
+func (api *DropboxApi) convert2pathMetadata(val interface{}) *PathMetadata {
+	metaMap := reflect.ValueOf(val)
+	meta := &PathMetadata{}
+	for _, key := range metaMap.MapKeys() {
+		value := metaMap.MapIndex(key).Elem()
+		fname := key.String()
+
+		switch fname {
+		case "revision":
+			meta.Revision = int(value.Float())
+		case "bytes":
+			meta.Bytes = int(value.Float())
+		case "is_dir":
+			meta.Is_dir = value.Bool()
+		case "thumb_exists":
+			meta.Thumb_exists = value.Bool()
+		case "modified":
+			meta.Modified = value.String()
+		case "rev":
+			meta.Rev = value.String()
+		case "path":
+			meta.Path = value.String()
+		case "icon":
+			meta.Icon = value.String()
+		case "root":
+			meta.Root = value.String()
+		case "size":
+			meta.Size = value.String()
+		}
+	}
+
+	return meta
 }
 
 func (api *DropboxApi) Revisions(path string) (*[]PathMetadata, *ApiError) {
