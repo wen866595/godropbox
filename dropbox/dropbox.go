@@ -62,15 +62,15 @@ type RequestSinger interface {
 }
 
 type QuotaInfo struct {
-	Shared int
-	Quota  int
-	Normal int
+	Shared int64
+	Quota  int64
+	Normal int64
 }
 
 type AccountInfo struct {
 	Referral_link string
 	Display_name  string
-	Uid           int
+	Uid           int64
 	Country       string
 	Email         string
 	Quota_info    QuotaInfo
@@ -208,6 +208,8 @@ func (api *DropboxApi) jsonReponseByPost(url string, jsonObj interface{}) *ApiEr
 
 func (api *DropboxApi) GetAccountInfo() (*AccountInfo, *ApiError) {
 	url := api.getUrl("account/info")
+	url = fmt.Sprintf("%s?locale=%s", url, api.Locale)
+
 	var accountInfo = &AccountInfo{}
 
 	err := api.jsonReponseByGet(url, accountInfo)
@@ -614,6 +616,13 @@ func (api *DropboxApi) Copy(from_path, to_path string) (*PathMetadata, *ApiError
 }
 
 func (api *DropboxApi) Copy_(root, from_path, to_path, from_copy_ref string) (*PathMetadata, *ApiError) {
+	if hasNil([]string{root, to_path}) {
+		return nil, &ApiError{Code: -1, ErrorMsg: "root, to_path are all required ."}
+	}
+	if !hasNotNil([]string{from_path, from_copy_ref}) {
+		return nil, &ApiError{Code: -1, ErrorMsg: "from_path, from_copy_ref must have one non-nil value ."}
+	}
+
 	apiurl := api.getUrl("fileops/copy")
 
 	values := url.Values{}
@@ -632,6 +641,10 @@ func (api *DropboxApi) CreateFolder(path string) (*PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) CreateFolder_(root, path string) (*PathMetadata, *ApiError) {
+	if hasNil([]string{root, path}) {
+		return nil, &ApiError{Code: -1, ErrorMsg: "root, path are all required ."}
+	}
+
 	apiurl := api.getUrl("fileops/create_folder")
 
 	values := url.Values{}
@@ -648,6 +661,10 @@ func (api *DropboxApi) Delete(path string) (*PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Delete_(root, path string) (*PathMetadata, *ApiError) {
+	if hasNil([]string{root, path}) {
+		return nil, &ApiError{Code: -1, ErrorMsg: "root, path are all required ."}
+	}
+
 	apiurl := api.getUrl("fileops/delete")
 
 	values := url.Values{}
@@ -664,6 +681,10 @@ func (api *DropboxApi) Move(from_path, to_path string) (*PathMetadata, *ApiError
 }
 
 func (api *DropboxApi) Move_(root, from_path, to_path string) (*PathMetadata, *ApiError) {
+	if hasNil([]string{root, from_path, to_path}) {
+		return nil, &ApiError{Code: -1, ErrorMsg: "root, from_path, to_path are all required ."}
+	}
+
 	apiurl := api.getUrl("fileops/move")
 
 	values := url.Values{}
@@ -674,4 +695,29 @@ func (api *DropboxApi) Move_(root, from_path, to_path string) (*PathMetadata, *A
 	apiurl = fmt.Sprintf("%s?%s", apiurl, values.Encode())
 
 	return api.fileOpertaion(apiurl)
+}
+
+func exists(strs []string, judge func(string) bool) bool {
+	for _, str := range strs {
+		if judge(str) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasNil(strs []string) bool {
+	judge := func(str string) bool {
+		return len(str) == 0
+	}
+
+	return exists(strs, judge)
+}
+
+func hasNotNil(strs []string) bool {
+	judge := func(str string) bool {
+		return len(str) > 0
+	}
+
+	return exists(strs, judge)
 }
