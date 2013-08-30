@@ -15,9 +15,8 @@ import (
 )
 
 var (
-	ApiUrls = map[string]string{
-		"authorize-url":       "https://www.dropbox.com/1/oauth2/authorize",
-		"authorized-redirect": "https://coderbee.net/oauth2/authorized",
+	apiUrls = map[string]string{
+		"authorize-url": "https://www.dropbox.com/1/oauth2/authorize",
 
 		"account/info":          "https://api.dropbox.com/1/account/info",
 		"metadata":              "https://api.dropbox.com/1/metadata/<root>/<path>",
@@ -98,7 +97,7 @@ type PathMetadata struct {
 }
 
 func (api *DropboxApi) getUrl(name string) string {
-	return ApiUrls[name]
+	return apiUrls[name]
 }
 
 func (api *DropboxApi) getRootPathUrl(name, root, path string) string {
@@ -118,14 +117,17 @@ func (api *DropboxApi) getErrorMsg(body []byte, code int) *ApiError {
 	return msg
 }
 
-func (api *DropboxApi) Authorize(appKey string) {
-	url := fmt.Sprintf("%s?response_type=token&client_id=%s&redirect_uri=%s", api.getUrl("authorize-url"), appKey, api.getUrl("authorized-redirect"))
-	// https://coderbee.net/oauth2/authorized#access_token=O_YKHHDEy3kAAAAAAAAAAVZZU1K72vMSH9U8LcgK83_jjm2R95bWelhC7qpbEbwX&token_type=bearer&uid=158135984
+func AuthorizeUrl(appKey, redirectUrl string) {
+	url := fmt.Sprintf("%s?response_type=token&client_id=%s&redirect_uri=%s", apiUrls["authorize-url"], appKey, redirectUrl)
 
 	fmt.Printf("%s\n", url)
 }
 
 func (api *DropboxApi) doRequest(req *http.Request) (*http.Response, *ApiError) {
+	if api.Signer == nil {
+		return nil, &ApiError{Code: -1, ErrorMsg: "no Signer found ."}
+	}
+
 	err := api.Signer.Sign(req)
 	if err != nil {
 		return &http.Response{}, err
