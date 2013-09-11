@@ -9,14 +9,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
 var (
-    rootRegexp *regexp.Regexp = regexp.MustCompile(`sandbox|dropbox|auto`)
+	rootRegexp *regexp.Regexp = regexp.MustCompile(`sandbox|dropbox|auto`)
 
 	apiUrls = map[string]string{
 		"authorize-url": "https://www.dropbox.com/1/oauth2/authorize",
@@ -254,9 +254,9 @@ func (api *DropboxApi) GetFile(path string) (*FileEntry, *ApiError) {
 }
 
 func (api *DropboxApi) GetFile_(root, path, rev string) (*FileEntry, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("gets", root, path)
 	apiurl = fmt.Sprintf("%s?rev=%s", apiurl, rev)
@@ -269,9 +269,9 @@ func (api *DropboxApi) Thumbnails(path string) (*FileEntry, *ApiError) {
 }
 
 func (api *DropboxApi) Thumbnails_(root, path, format, size string) (*FileEntry, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("thumbnails", root, path)
 
@@ -285,9 +285,9 @@ func (api *DropboxApi) GetFileMetadata(path string) (*PathMetadata, *ApiError) {
 func (api *DropboxApi) GetFileMetadata_(root, path string, file_limit int, hash string,
 	list, include_deleted bool, rev string) (*PathMetadata, *ApiError) {
 
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("metadata", root, path)
 	values := url.Values{}
@@ -308,9 +308,8 @@ func (api *DropboxApi) GetFileMetadata_(root, path string, file_limit int, hash 
 	return metadata, err
 }
 
-
 func (api *DropboxApi) PutFileByName(localFilePath, path string) (*PathMetadata, *ApiError) {
-    return api.PutFileByName_(localFilePath, api.Root, path)
+	return api.PutFileByName_(localFilePath, api.Root, path)
 }
 
 func (api *DropboxApi) PutFileByName_(localFilePath, root, path string) (*PathMetadata, *ApiError) {
@@ -441,9 +440,9 @@ func (api *DropboxApi) Revisions(path string) (*[]PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Revisions_(root, path string, rev_limit int) (*[]PathMetadata, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("revisions", root, path)
 
@@ -462,9 +461,9 @@ func (api *DropboxApi) Restore(path, rev string) (*PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Restore_(root, path, rev string) (*PathMetadata, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("restore", root, path)
 
@@ -483,9 +482,9 @@ func (api *DropboxApi) Search(path, query string) (*[]PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Search_(root, path, query string, file_limit int, include_deleted bool) (*[]PathMetadata, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("search", root, path)
 
@@ -506,9 +505,9 @@ func (api *DropboxApi) Shares(path string) (map[string]string, *ApiError) {
 }
 
 func (api *DropboxApi) Shares_(root, path string, short_url bool) (map[string]string, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("shares", root, path)
 
@@ -527,9 +526,9 @@ func (api *DropboxApi) CopyRef(path string) (map[string]string, *ApiError) {
 }
 
 func (api *DropboxApi) CopyRef_(root, path string) (map[string]string, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("copy_ref", root, path)
 
@@ -543,9 +542,9 @@ func (api *DropboxApi) Media(path string) (map[string]string, *ApiError) {
 }
 
 func (api *DropboxApi) Media_(root, path string) (map[string]string, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("media", root, path)
 
@@ -636,9 +635,9 @@ func (api *DropboxApi) commitChunkedUpload(path, upload_id string) (*PathMetadat
 }
 
 func (api *DropboxApi) CommitChunkedUpload_(root, path, upload_id, parent_rev string, overwrite bool) (*PathMetadata, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getRootPathUrl("commit_chunked_upload", root, path)
 
@@ -671,9 +670,9 @@ func (api *DropboxApi) Copy_(root, from_path, to_path, from_copy_ref string) (*P
 		return nil, &ApiError{Code: -1, ErrorMsg: "from_path, from_copy_ref must have one non-nil value ."}
 	}
 
-    if err := checkRoot(root); err != nil {
-        return nil, err
-    }
+	if err := checkRoot(root); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getUrl("fileops/copy")
 
@@ -693,9 +692,9 @@ func (api *DropboxApi) CreateFolder(path string) (*PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) CreateFolder_(root, path string) (*PathMetadata, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getUrl("fileops/create_folder")
 
@@ -713,9 +712,9 @@ func (api *DropboxApi) Delete(path string) (*PathMetadata, *ApiError) {
 }
 
 func (api *DropboxApi) Delete_(root, path string) (*PathMetadata, *ApiError) {
-    if err := checkRootAndPath(root, path); err != nil {
-        return nil, err
-    }
+	if err := checkRootAndPath(root, path); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getUrl("fileops/delete")
 
@@ -737,9 +736,9 @@ func (api *DropboxApi) Move_(root, from_path, to_path string) (*PathMetadata, *A
 		return nil, &ApiError{Code: -1, ErrorMsg: "root, from_path, to_path are all required ."}
 	}
 
-    if err := checkRoot(root); err != nil {
-        return nil, err
-    }
+	if err := checkRoot(root); err != nil {
+		return nil, err
+	}
 
 	apiurl := api.getUrl("fileops/move")
 
@@ -758,13 +757,13 @@ func checkRootAndPath(root, path string) *ApiError {
 		return &ApiError{Code: -1, ErrorMsg: "root, path are all required ."}
 	}
 
-    return checkRoot(root)
+	return checkRoot(root)
 }
 
 func checkRoot(root string) *ApiError {
-    if rootRegexp.MatchString(root) {
-        return nil
-    }
+	if rootRegexp.MatchString(root) {
+		return nil
+	}
 
 	return &ApiError{Code: -1, ErrorMsg: `root must be "dropbox" or "sandbox" or "auto" .`}
 }

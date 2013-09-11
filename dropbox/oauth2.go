@@ -1,7 +1,6 @@
-package oauth2
+package dropbox
 
 import (
-	"../../dropbox"
 	"fmt"
 	"net/http"
 )
@@ -12,7 +11,7 @@ type OAuth2 struct {
 	Uid         string
 }
 
-func (oauth *OAuth2) Sign(req *http.Request) *dropbox.ApiError {
+func (oauth *OAuth2) Sign(req *http.Request) *ApiError {
 	authHeader := fmt.Sprintf("Bearer %s", oauth.AccessToken)
 	req.Header.Add("Authorization", authHeader)
 	return nil
