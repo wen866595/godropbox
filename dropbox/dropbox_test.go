@@ -2,13 +2,18 @@ package dropbox
 
 import (
 	"testing"
+	"strings"
 )
 
 var (
-	accessToken = "E6KBMoN1FSkAAAAAAAAAAV1m7sZCWsVVUzvrwwUMqhCTz0pB6_SJyiYh0Q9IepsD"
+	accessToken = "" // you access token here
 )
 
 func getApi() *DropboxApi {
+    if strings.EqualFold("", accessToken) {
+        panic("no accessToken is gived .")
+    }
+
 	oauth2 := &OAuth2{AccessToken: accessToken}
 	dropboxApi := &DropboxApi{Signer: oauth2, Root: "sandbox", Locale: "CN"}
 	return dropboxApi
