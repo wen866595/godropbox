@@ -3,10 +3,20 @@ godropbox
 
 dropbox sdk implemented in Go .
 
-Example:
+###  get accessToken
+construct a url like below:   
+https://www.dropbox.com/1/oauth2/authorize?response_type=token&client_id=you-appKey&redirect_uri=you-redirect-url
+
+then open in browser, after redirected, the address in browser may look like below :   
+http://127.0.0.1/authorized#access_token=zC_ZXIYlO8QAAAAAAAAAARGiMdIq6QDFUO46EreBouy6oesz-0XsK9qYJbrqEIIp&token_type=bearer&uid=158130000
+
+now, you get accessToken !
+
+###  Example
+you can get more example in file dropbox_test.go .
 
 ~~~Go
- oauth2 := &oauth2.OAuth2{AccessToken: "you ouath2 access_token"}
+ oauth2 := &dropbox.OAuth2{AccessToken: "you ouath2 access_token"}
 
  dropboxApi := &dropbox.DropboxApi{Signer: oauth2, Root: "dropbox", Locale: "CN"}
 
@@ -33,7 +43,7 @@ Example:
 
  copyRef, err := dropboxApi.CopyRef("/main.go")
  if err != nil {
-     fmt.Printf("error msg: %s\n", err)
+     Fmt.Printf("error msg: %s\n", err)
  } else {
      fmt.Printf("copyRef : %v\n", copyRef)
  }
